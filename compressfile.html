@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compress Your File</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+      color: #333;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: #121212;
+      color: #fff;
+    }
+    header {
+      padding: 1rem;
+      text-align: center;
+      background: #6200ee;
+      color: white;
+    }
+    .upload-area {
+      border: 2px dashed #aaa;
+      padding: 2rem;
+      text-align: center;
+      margin: 1rem auto;
+      background: #fff;
+      width: 90%;
+      max-width: 600px;
+    }
+    .browse-btn {
+      color: blue;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .preview {
+      background: #fff;
+      border: 1px solid #ccc;
+      margin: 1rem auto;
+      padding: 1rem;
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+    }
+    .preview img {
+      max-width: 100%;
+      height: auto;
+    }
+    .size-info {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
+    .actions {
+      margin-top: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    a.download-btn {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Compress Your File</h1>
+  </header>
+
+  <main>
+    <section class="upload-area" id="upload-area">
+      <p>Drag & Drop image here or <label for="file-input" class="browse-btn">Browse</label></p>
+      <input type="file" id="file-input" accept="image/*" hidden />
+    </section>
+
+    <section class="preview" id="preview" style="display: none;">
+      <img id="preview-img" />
+      <div class="size-info" id="size-info"></div>
+      <div class="actions">
+        <button id="compress-btn">Compress</button>
+        <button id="download-btn" style="display: none;">Download</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const previewSection = document.getElementById('preview');
+    const previewImg = document.getElementById('preview-img');
+    const sizeInfo = document.getElementById('size-info');
+    const compressBtn = document.getElementById('compress-btn');
+    const downloadBtn = document.getElementById('download-btn');
+
+    let originalSize = 0;
+    let currentImage = null;
+    let fileName = 'compressed.jpg';
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.style.background = '#eee';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.style.background = '#fff';
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.background = '#fff';
+      handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) return;
+      originalSize = (file.size / 1024).toFixed(2);
+      fileName = 'compressed_' + file.name;
+      const reader = new FileReader();
+      reader.onload = () => {
+        currentImage = new Image();
+        currentImage.src = reader.result;
+        currentImage.onload = () => {
+          previewImg.src = currentImage.src;
+          previewSection.style.display = 'block';
+          sizeInfo.innerText = `Original Size: ${originalSize} KB`;
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    compressBtn.onclick = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = currentImage.width;
+      canvas.height = currentImage.height;
+      ctx.drawImage(currentImage, 0, 0);
+      canvas.toBlob((blob) => {
+        const compressedUrl = URL.createObjectURL(blob);
+        previewImg.src = compressedUrl;
+        const newSize = (blob.size / 1024).toFixed(2);
+        sizeInfo.innerText = `Original Size: ${originalSize} KB\nCompressed Size: ${newSize} KB`;
+
+        // Enable download button
+        downloadBtn.style.display = 'inline-block';
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = compressedUrl;
+          a.download = fileName;
+          a.click();
+        };
+      }, 'image/jpeg', 0.5);
+    };
+  </script>
+</body>
+</html>
